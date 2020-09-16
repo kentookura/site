@@ -1,0 +1,94 @@
+#!/bin/sh
+#
+# edit a local website and reload surf when a file changes
+#
+# kento@okura.at
+
+testdir(){
+	if [ ! -d $1 ]; then
+		mkdir -p $1
+	fi
+	echo $1 >> ./.env
+}
+
+init(){
+	echo "Project root directory: "
+	echo $PWD
+	PRJ_ROOT=$PWD
+
+	echo "Site source directory: "
+	read SRC_DIR
+	testdir $SRCDIR
+
+	echo "Site destination directory: "
+	read DST_DIR; 
+	testdir $DST_DIR
+	
+	echo "Site URL: "
+	read NAME
+	testdir $NAME
+
+	read NAME
+	echo "Site URL: "
+	read URL
+	testdir $URL
+
+	echo $SRC_DIR
+	echo $DST_DIR
+	echo $NAME
+	echo $URL   
+}
+
+setup(){
+	tabbed -n surf-tabs -s > "$surf_xidfile" &
+	tabbed -n st-tabs -s > "$term_xidfile" &
+}
+
+openfile(){
+	uri="$(echo $1 | sed 's/src/dst/g; s/md/html/g')"
+
+	termxid=$(cat "$term_xidfile")
+	surfxid=$(cat "$surf_xidfile")
+
+	echo embedding term in $termxid
+	echo embedding surf in $surfxid
+
+	st -w "$termxid" -T "${mdfile##*/}" -e vim "$1" &
+	surf -M -e "$surfxid" "$uri" &
+}
+
+dmenusel(){
+	mdfile="$(find $SRC_DIR/ | grep -E "\.html$|\.md$" | dmenu -l 10 -y 200 -w 600 -x 600 -bw 3 -p 'Edit page: ')"
+
+	openfile $mdfile
+}
+
+refresh(){
+	trap "rm $PRJ_ROOT/.session-lock" SIGINT SIGTERM
+	touch $PRJ_ROOT/.session-lock
+	find $SRC_DIR | grep -E "\.md$|\.wiki$" |
+		entr -s "rm -f $SRC_DIR/.files \
+			&& ssg5 $SRC_DIR $DST_DIR $NAME $URL \
+			&& refreshsurf"
+}
+
+if [ ! -f ./.env ]; then
+	init
+else
+	. ./.env
+	export term_xidfile="$PRJ_ROOT/term.xid"
+	export surf_xidfile="$PRJ_ROOT/surf.xid"
+
+	if [ -f $PRJ_ROOT/.session-lock ]; then
+		if [ -z $1 ]; then
+			dmenusel
+		elif [ -f $1 ]; then
+			openfile $1 
+		fi
+	else
+		rm $term_xidfile $surf_xidfile 
+		setup
+		dmenusel
+		refresh
+	fi
+fi
