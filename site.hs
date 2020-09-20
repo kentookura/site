@@ -1,18 +1,26 @@
 --------------------------------------------------------------------------------
 {-# LANGUAGE OverloadedStrings #-}
-import           Data.Monoid (mappend)
 import           Control.Arrow ((&&&))
 import           Control.Monad (forM_)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (maybeToList, fromMaybe)
+import qualified Data.Text as T
 import           Text.Pandoc
 import           Text.Pandoc.Walk
+import           System.FilePath
 import           Hakyll
 --------------------------------------------------------------------------------
-main :: IO ()
-main = hakyll $ do
+-- config
+config :: Configuration
+config = defaultConfiguration { providerDirectory = "src" } 
 
-    forM_ [ "images./*"
+main :: IO ()
+main = hakyllWith config $ do
+
+--------------------------------------------------------------------------------
+-- simple compilatiion
+
+    forM_ [ "images/*"
           , "node/*"
           , "assets/resume.pdf"
           ] $ \f -> match f $ do
@@ -43,7 +51,11 @@ main = hakyll $ do
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
             >>= relativizeUrls
-        
+
+-- dynamic content
+--------------------------------------------------------------------------------
+--  blogposts
+
     match "posts/*" $ do
         route $ setExtension "html"
         compile $ do
@@ -52,6 +64,19 @@ main = hakyll $ do
             >>= loadAndApplyTemplate "templates/post.html"    postCtx
             >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
+
+    match "index.html" $ do
+        route idRoute
+        compile $ do
+            posts <- recentFirst =<< loadAll "posts/*"
+            let indexCtx =
+                    listField "posts" postCtx (return posts) <>
+                    defaultContext
+
+            getResourceBody
+                >>= applyAsTemplate indexCtx
+                >>= loadAndApplyTemplate "templates/default.html" indexCtx
+                >>= relativizeUrls
 
     create ["archive.html"] $ do
         route idRoute
@@ -67,28 +92,31 @@ main = hakyll $ do
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= relativizeUrls
 
-    match "index.html" $ do
-        route idRoute
-        compile $ do
-            posts <- recentFirst =<< loadAll "posts/*"
-            let indexCtx =
-                    listField "posts" postCtx (return posts) `mappend`
-                    defaultContext
-
-            getResourceBody
-                >>= applyAsTemplate indexCtx
-                >>= loadAndApplyTemplate "templates/default.html" indexCtx
-                >>= relativizeUrls
-
 --------------------------------------------------------------------------------
 
-postCtx :: Context String
-postCtx =
-    dateField "date" "%B %e, %Y" `mappend`
-    defaultContext
+    forM_ [ "origami/*/*.jpg"
+          , "origami/*/*.jpeg"
+          , "origami/*/*.png"
+          ] $ \f -> match f $ do
+            route idRoute
+            compile copyFileCompiler
 
-postCtxWithTags :: Tags -> Context String
-postCtxWithTags tags = tagsField "tags" tags `mappend` postCtx
+    match "origami/*/*.md" $ do
+      route $ (customRoute $ trimModelPth . toFilePath) `composeRoutes` (setExtension "html")
+      compile $ pandocCompiler
+        >>= loadAndApplyTemplate "templates/default.html" defaultContext
+        >>= relativizeUrls
+
+
+trimModelPth :: FilePath -> FilePath
+trimModelPth path = (T.unpack $ head ws) ++ "/" ++ (T.unpack $ last ws) where
+  ws = T.splitOn (T.pack "/") (T.pack path)
+
+
+--------------------------------------------------------------------------------
+--
+-- http://blog.tpleyer.de/posts/2019-04-21-external-code-inclusion-with-hakyll.html
+
 
 toSnippetMap :: [Item String] -> M.Map FilePath String
 toSnippetMap is = M.fromList kvs
@@ -111,3 +139,10 @@ codeBlockFromDiv snippetMap div@(Div (_,_,kvs) _) =
     in maybe Null (CodeBlock ("", classes, [])) content
 codeBlockFromDiv _ _ = Null
 
+--------------------------------------------------------------------------------
+-- defaults
+
+postCtx :: Context String
+postCtx =
+    dateField "date" "%B %e, %Y" <>
+    defaultContext
