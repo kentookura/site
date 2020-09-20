@@ -1,0 +1,6 @@
+resolver: lts-14.16  # Adapt this as needed
+packages:
+  - .
+extra-deps:
+  - hakyll-4.13.0.1  # Or a later version you installed
+  - containers-0.6.0.1

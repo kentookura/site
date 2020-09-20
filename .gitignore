@@ -1,0 +1,7 @@
+node
+README.md
+.stack-work
+node
+_cache
+_site
+stack.yaml.lock
