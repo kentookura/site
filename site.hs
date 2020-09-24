@@ -9,10 +9,28 @@ import           Text.Pandoc
 import           Text.Pandoc.Walk
 import           System.FilePath
 import           Hakyll
+import           Hakyll.Web.Sass (sassCompiler)
+import           Hakyll.Images (loadImage
+                               , compressJpgCompiler
+                               , resizeImageCompiler
+                               , scaleImageCompiler)
+import           Text.Sass.Options ( SassOptions(..)
+                                   , defaultSassOptions
+                                   , SassOutputStyle(..))
 --------------------------------------------------------------------------------
 -- config
 config :: Configuration
-config = defaultConfiguration { providerDirectory = "src" } 
+config = defaultConfiguration
+  { providerDirectory = "src" 
+  , deployCommand = "rsync -avz _site root@okura.at:/var/www/main" } 
+
+sassOptions :: Maybe FilePath -> SassOptions
+sassOptions distPath = defaultSassOptions
+  { sassSourceMapEmbed = True
+  , sassOutputStyle = SassStyleCompressed
+  , sassIncludePaths = fmap (: []) distPath
+  }
+
 
 main :: IO ()
 main = hakyllWith config $ do
@@ -27,12 +45,11 @@ main = hakyllWith config $ do
         route   idRoute
         compile copyFileCompiler
 
-    match "css/*" $ compile compressCssCompiler
-    create ["style.css"] $ do
-      route idRoute
-      compile $ do
-        csses <- loadAll "css/*.css"
-        makeItem $ unlines $ map itemBody csses
+
+    match "css/*.scss" $ do
+      route $ setExtension "css"
+      let compressCssItem = fmap compressCss
+      compile (compressCssItem <$> sassCompiler)
 
     match "templates/*" $ compile templateBodyCompiler
 
@@ -50,19 +67,6 @@ main = hakyllWith config $ do
         route idRoute
         compile $ pandocCompiler
             >>= loadAndApplyTemplate "templates/default.html" defaultContext
-            >>= relativizeUrls
-
--- dynamic content
---------------------------------------------------------------------------------
---  blogposts
-
-    match "posts/*" $ do
-        route $ setExtension "html"
-        compile $ do
-          snippetMap <- toSnippetMap <$> loadAll "code/**"
-          pandocCompilerWithCodeInsertion snippetMap
-            >>= loadAndApplyTemplate "templates/post.html"    postCtx
-            >>= loadAndApplyTemplate "templates/default.html" postCtx
             >>= relativizeUrls
 
     match "index.html" $ do
@@ -92,26 +96,51 @@ main = hakyllWith config $ do
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= relativizeUrls
 
---------------------------------------------------------------------------------
+    let orimatches = fmap ("origami/*/*." ++ ) ["jpg", "jpeg", "png"]
 
-    forM_ [ "origami/*/*.jpg"
-          , "origami/*/*.jpeg"
-          , "origami/*/*.png"
-          ] $ \f -> match f $ do
+    create ["origami.html"] $ do
+      route idRoute
+      compile $ do
+        models <- loadAll "origami/**.md"
+        let origamiCtx =
+              listField "models" postCtx (return models) <>
+              constField "title" "Origami"              <>
+              defaultContext
+        makeItem ""
+          >>= loadAndApplyTemplate "templates/origami.html" origamiCtx
+          >>= loadAndApplyTemplate "templates/default.html" origamiCtx
+          >>= relativizeUrls
+
+    -- photos
+    forM_ (fmap fromGlob orimatches) $ \f -> match f $ do
             route idRoute
             compile copyFileCompiler
+
+    -- thumbnails
+    --match "origami/*/1.*"
+      
+
+    match "posts/*" $ do
+        route $ setExtension "html"
+        compile $ do
+          snippetMap <- toSnippetMap <$> loadAll "code/**"
+          pandocCompilerWithCodeInsertion snippetMap
+            >>= loadAndApplyTemplate "templates/post.html"    postCtx
+            >>= loadAndApplyTemplate "templates/default.html" postCtx
+            >>= relativizeUrls
 
     match "origami/*/*.md" $ do
       route $ (customRoute $ trimModelPth . toFilePath) `composeRoutes` (setExtension "html")
       compile $ pandocCompiler
+        >>= loadAndApplyTemplate "templates/model.html" defaultContext
         >>= loadAndApplyTemplate "templates/default.html" defaultContext
         >>= relativizeUrls
+
 
 
 trimModelPth :: FilePath -> FilePath
 trimModelPth path = (T.unpack $ head ws) ++ "/" ++ (T.unpack $ last ws) where
   ws = T.splitOn (T.pack "/") (T.pack path)
-
 
 --------------------------------------------------------------------------------
 --
