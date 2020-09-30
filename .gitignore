@@ -1,7 +1,9 @@
-node
-README.md
 .stack-work
-node
+src/node_modules/
+README.md
 _cache
 _site
+dist-newstyle
+node
+node
 stack.yaml.lock
