@@ -3,4 +3,6 @@ packages:
   - .
 extra-deps:
   - hakyll-4.13.0.1  # Or a later version you installed
+  - hakyll-sass-0.2.4
+  - hakyll-images-0.4.4
   - containers-0.6.0.1
