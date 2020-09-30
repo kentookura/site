@@ -4,6 +4,7 @@ import           Control.Arrow ((&&&))
 import           Control.Monad (forM_)
 import qualified Data.Map.Strict as M
 import           Data.Maybe (maybeToList, fromMaybe)
+import           Data.List (isPrefixOf, isSuffixOf)
 import qualified Data.Text as T
 import           Text.Pandoc
 import           Text.Pandoc.Walk
@@ -22,7 +23,18 @@ import           Text.Sass.Options ( SassOptions(..)
 config :: Configuration
 config = defaultConfiguration
   { providerDirectory = "src" 
-  , deployCommand = "rsync -avz _site root@okura.at:/var/www/main" } 
+  , deployCommand = "rsync -avz _site root@okura.at:/var/www/main"
+  , ignoreFile = myIgnoreList
+  } where
+    myIgnoreList path
+      | "."    `isPrefixOf` fileName = True
+      | "#"    `isPrefixOf` fileName = True
+      | "~"    `isSuffixOf` fileName = True
+      | ".swp" `isSuffixOf` fileName = True
+      | "_"    `isPrefixOf` fileName = True
+      | otherwise                    = False
+      where
+        fileName = takeFileName path
 
 sassOptions :: Maybe FilePath -> SassOptions
 sassOptions distPath = defaultSassOptions
@@ -96,7 +108,7 @@ main = hakyllWith config $ do
                 >>= loadAndApplyTemplate "templates/default.html" archiveCtx
                 >>= relativizeUrls
 
-    let orimatches = fmap ("origami/*/*." ++ ) ["jpg", "jpeg", "png"]
+    let orimatches = fmap ("origami/*/*." ++ ) ["jpg", "jpeg"]
 
     create ["origami.html"] $ do
       route idRoute
@@ -114,11 +126,12 @@ main = hakyllWith config $ do
     -- photos
     forM_ (fmap fromGlob orimatches) $ \f -> match f $ do
             route idRoute
-            compile copyFileCompiler
+            compile $ loadImage
+              >>= compressJpgCompiler 50
 
-    -- thumbnails
-    --match "origami/*/1.*"
-      
+    --match "posts/*" $ do
+    --   route $ composeRoutes (gsubRoute "rss/" (const "posts")) (setExtension "html")
+    --   runRoutes gsubRoute "posts/" (const "posts")
 
     match "posts/*" $ do
         route $ setExtension "html"
