@@ -4,10 +4,11 @@ title: My reading list
 This page is just to keep track of the books I read.  
 
 # Currently Reading
-- The Lions of Al-Rassan by Guy Gavriel Kay
-- Why Love Hurts: A Sociological Explanation by Eva Illouz
+- Before They are Hanged by Joe Abercrombie
 
 # Finished
+## September
+- The Lions of Al-Rassan by Guy Gavriel Kay
 ## August
 - Warbreaker by Brandon Sanderson
 

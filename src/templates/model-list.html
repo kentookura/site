@@ -1,0 +1,14 @@
+<div class="gallery">
+
+  $for(models)$
+    <div class="model-card">
+        <a class="model-image" href="$url$">
+          <img src="origami/$thumb$">
+        </a>
+        <div class="model-text">
+          $name$</br>
+          Designed by $designer$
+        </div>
+    </div>
+  $endfor$
+</div>

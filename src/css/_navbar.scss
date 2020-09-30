@@ -1,0 +1,36 @@
+.navbar {
+  width: 100%;
+
+  ul {
+    display: flex;
+    flex-direction: row;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: $nav-bg;
+    overflow: hidden;
+  }
+
+  li {
+    float: left;
+    &:last-child {
+      margin-left: auto
+    }
+  }
+  .nav-icon {
+    justify-content: center;
+  }
+  a {
+    display: block;
+    padding: 1rem;
+    color: $nav-text;
+    background-color: $nav-bg;
+    &:hover {
+      background-color: #555;
+    }
+    &:visited {
+      color:  $nav-text;
+    }
+  }
+}
