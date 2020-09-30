@@ -1,0 +1,172 @@
+@import 'theme';
+@import 'navbar';
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:300italic,300);
+
+body {
+  font-family: 'Open Sans', Helvetica, sans-serif;
+  font-size: 2vw;
+  background-color: $bg-primary;
+  margin: 0; 
+  padding: 0;
+}
+
+main {
+  padding: 0;
+  margin: 3rem auto 1rem;
+  max-width: 48rem;
+}
+
+footer {
+  text-align: center;
+  position: bottom;
+}
+
+img {
+  max-width: 100%;
+}
+
+.link-text {
+  font-family: 'Open Sans', Helvetica, sans-serif;
+  font-weight: 700;
+}
+
+a,
+a:visited {
+  text-decoration: none;
+  color: $link-normal;
+}
+
+a:hover,
+a:focus,
+a:active {
+  color: $link-active;
+}
+
+
+.gallery {
+  -webkit-column-count: 3;
+  -moz-column-count: 3;
+  column-count: 3;
+  -webkit-column-gap: 10px;
+  -moz-column-gap: 10px;
+  column-gap: 10px;
+  margin-top: 10px;
+  overflow: hidden;
+
+  .model-card {
+    margin: 0 auto;
+    position: relative;
+
+    .model-text {
+      color: $fg-primary;
+      font-weight: 800;
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
+      transition: 0.5s;
+    }
+
+    &:hover .model-image {
+      opacity: .5;
+    }
+    &:hover .model-text {
+      opacity: 1;
+    }
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar {
+    margin-left: 30px;
+    float: left;
+    height: 300px;
+    width: 65px;
+    background: #F5F5F5;
+    overflow-y: scroll;
+    margin-bottom: 25px;
+}
+
+@media screen and (max-width: 600px) {
+  body {
+    padding: 0; 
+    margin: 0;
+  }
+  main { 
+    padding: 1rem;
+    margin: 0;
+    margin-left: 3rem;
+  }
+
+  .gallery {
+    -webkit-column-count: 1;
+    -moz-column-count: 1;
+    column-count: 1;
+  }
+
+  .navbar {
+    z-index: 3;
+    position: fixed;
+    width: 2rem;
+    height: 100%;
+    transition: width 600ms ease;
+    &:hover {
+      width: 10rem;
+      .link-text {
+        display: inline;
+      }
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      overflow: hidden;
+
+      li {
+        width: 100%;
+        height: 3rem;
+
+        a {
+          display: flex;
+          align-items: center;
+          padding: 0rem;
+          height: 3rem;
+          transition: 600ms;
+          color: $bg-primary;
+          text-decoration: none;
+          filter: grayscale(100%) opacity(0.7);
+          transition: 600ms;
+          &:hover {
+            filter: grayscale(0%) opacity(1);
+            background: $link-normal;
+            color: $bg-primary;
+          }
+        }
+
+        i {
+          width: 1rem;
+          min-width: 1rem;
+          margin: 0 0.25rem;
+        }
+        &:last-child {
+          margin-top: auto;
+        }
+      }
+
+    }
+    .link-text {
+      display: none;
+      font-weight: 700;
+      margin-left: 1rem;
+    }
+  }
+}
